@@ -1,5 +1,5 @@
-import { View } from 'react-native';
+import SplashScreen from '@/components/splash-screen';
 
 export default function Index() {
-  return <View style={{ flex: 1, backgroundColor: 'white' }} />;
+  return <SplashScreen />;
 }

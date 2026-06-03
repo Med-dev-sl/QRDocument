@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "QrDocument",
+    "name": "Kyoku Offline QR Code Scanner",
     "slug": "QrDocument",
     "version": "1.0.0",
     "orientation": "portrait",
