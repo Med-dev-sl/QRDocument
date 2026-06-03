@@ -8,7 +8,12 @@ import {
   Text,
   TextInput,
   View,
+  ActivityIndicator,
 } from 'react-native';
+import { router } from 'expo-router';
+import { apiPost, type AuthResponse } from '@/api';
+import SuccessModal from './success-modal';
+import ErrorModal from './error-modal';
 
 export default function RegisterForm() {
   const [firstName, setFirstName] = useState('');
@@ -16,71 +21,119 @@ export default function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [error, setError] = useState({ visible: false, message: '' });
 
-  const handleRegister = () => {};
+  const handleRegister = async () => {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      setError({ visible: true, message: 'Please fill in all fields' });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError({ visible: true, message: 'Passwords do not match' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiPost<AuthResponse>('/api/auth/register', {
+        firstName,
+        lastName,
+        email,
+        password,
+      });
+      setUserName(res.user.firstName);
+      setShowSuccess(true);
+    } catch (err: any) {
+      setError({ visible: true, message: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
+    <>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Fill in your details to get started</Text>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Fill in your details to get started</Text>
 
-        <View style={styles.form}>
-          <View style={styles.row}>
+          <View style={styles.form}>
+            <View style={styles.row}>
+              <TextInput
+                style={[styles.input, styles.halfInput]}
+                placeholder="First Name"
+                placeholderTextColor="#999"
+                value={firstName}
+                onChangeText={setFirstName}
+              />
+              <TextInput
+                style={[styles.input, styles.halfInput]}
+                placeholder="Last Name"
+                placeholderTextColor="#999"
+                value={lastName}
+                onChangeText={setLastName}
+              />
+            </View>
+
             <TextInput
-              style={[styles.input, styles.halfInput]}
-              placeholder="First Name"
+              style={styles.input}
+              placeholder="Email"
               placeholderTextColor="#999"
-              value={firstName}
-              onChangeText={setFirstName}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
             <TextInput
-              style={[styles.input, styles.halfInput]}
-              placeholder="Last Name"
+              style={styles.input}
+              placeholder="Password"
               placeholderTextColor="#999"
-              value={lastName}
-              onChangeText={setLastName}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
             />
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+
+            <Pressable style={styles.button} onPress={handleRegister} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.buttonText}>Create Account</Text>
+              )}
+            </Pressable>
           </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#999"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-          />
+      <SuccessModal
+        visible={showSuccess}
+        firstName={userName}
+        onFinish={() => router.replace('/dashboard')}
+      />
 
-          <Pressable style={styles.button} onPress={handleRegister}>
-            <Text style={styles.buttonText}>Create Account</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <ErrorModal
+        visible={error.visible}
+        message={error.message}
+        onDismiss={() => setError({ visible: false, message: '' })}
+      />
+    </>
   );
 }
 

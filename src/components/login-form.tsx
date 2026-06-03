@@ -7,49 +7,89 @@ import {
   Text,
   TextInput,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
+import { apiPost, type AuthResponse } from '@/api';
+import SuccessModal from './success-modal';
+import ErrorModal from './error-modal';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [error, setError] = useState({ visible: false, message: '' });
 
-  const handleLogin = () => {
-    router.replace('/dashboard');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError({ visible: true, message: 'Please fill in all fields' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiPost<AuthResponse>('/api/auth/login', { email, password });
+      setUserName(res.user.firstName);
+      setShowSuccess(true);
+    } catch (err: any) {
+      setError({ visible: true, message: err.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <Text style={styles.title}>Welcome Back</Text>
-      <Text style={styles.subtitle}>Sign in to continue</Text>
+    <>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.subtitle}>Sign in to continue</Text>
 
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#999"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#999"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#999"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
 
-        <Pressable style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Sign In</Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+          <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Sign In</Text>
+            )}
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+
+      <SuccessModal
+        visible={showSuccess}
+        firstName={userName}
+        onFinish={() => router.replace('/dashboard')}
+      />
+
+      <ErrorModal
+        visible={error.visible}
+        message={error.message}
+        onDismiss={() => setError({ visible: false, message: '' })}
+      />
+    </>
   );
 }
 
