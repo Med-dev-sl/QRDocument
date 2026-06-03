@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   form: {
     gap: 14,
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 440,
   },
   row: {
     flexDirection: 'row',

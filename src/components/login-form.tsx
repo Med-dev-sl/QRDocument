@@ -8,12 +8,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { router } from 'expo-router';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {};
+  const handleLogin = () => {
+    router.replace('/dashboard');
+  };
 
   return (
     <KeyboardAvoidingView
@@ -72,7 +75,7 @@ const styles = StyleSheet.create({
   form: {
     gap: 14,
     width: '100%',
-    maxWidth: 340,
+    maxWidth: 400,
   },
   input: {
     borderWidth: 1,
