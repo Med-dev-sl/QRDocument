@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -6,6 +7,20 @@ import categoriesRoutes from "./routes/categories.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import documentsRoutes from "./routes/documents.js";
 import usersRoutes from "./routes/users.js";
+=======
+import express from 'express';
+import cors from 'cors';
+<<<<<<< HEAD
+import { getDb } from './db/init.js';
+=======
+import dotenv from 'dotenv';
+>>>>>>> efd0424ff5e98143bf1e1a7a85b0a2149ee961c9
+import authRoutes from './routes/auth.js';
+import usersRoutes from './routes/users.js';
+import categoriesRoutes from './routes/categories.js';
+import documentsRoutes from './routes/documents.js';
+import dashboardRoutes from './routes/dashboard.js';
+>>>>>>> 08f42d12284a64b1b83f47d3b911ebe278aaa859
 
 dotenv.config();
 
@@ -39,7 +54,19 @@ app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
 
+<<<<<<< HEAD
+async function start() {
+  await getDb();
+  console.log('Database ready');
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+start();
+=======
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📚 API documentation available at http://localhost:${PORT}/api`);
 });
+>>>>>>> efd0424ff5e98143bf1e1a7a85b0a2149ee961c9

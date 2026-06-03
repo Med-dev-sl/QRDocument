@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+node_modules/
+data.db
+=======
 node_modules/
 dist/
 build/
@@ -21,3 +25,4 @@ data.db-wal
 *.swp
 *.swo
 *~
+>>>>>>> efd0424ff5e98143bf1e1a7a85b0a2149ee961c9

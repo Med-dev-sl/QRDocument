@@ -1,14 +1,29 @@
+<<<<<<< HEAD
 import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
+=======
+import initSqlJs from 'sql.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+>>>>>>> 08f42d12284a64b1b83f47d3b911ebe278aaa859
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, "..", "..", "data.db");
 
-const db = new Database(dbPath);
+let db;
 
+<<<<<<< HEAD
 db.pragma("journal_mode = WAL");
+=======
+export async function getDb() {
+  if (db) return db;
+>>>>>>> 08f42d12284a64b1b83f47d3b911ebe278aaa859
 
+<<<<<<< HEAD
+  const SQL = await initSqlJs();
+=======
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,5 +79,33 @@ db.exec(`
     FOREIGN KEY (document_id) REFERENCES documents(document_id)
   );
 `);
+>>>>>>> efd0424ff5e98143bf1e1a7a85b0a2149ee961c9
 
-export default db;
+  if (fs.existsSync(dbPath)) {
+    const buffer = fs.readFileSync(dbPath);
+    db = new SQL.Database(buffer);
+  } else {
+    db = new SQL.Database();
+  }
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
+  saveDb();
+  return db;
+}
+
+export function saveDb() {
+  if (!db) return;
+  const data = db.export();
+  const buffer = Buffer.from(data);
+  fs.writeFileSync(dbPath, buffer);
+}
