@@ -41,6 +41,7 @@ backend/
 ## 🔐 Authentication
 
 ### Register
+
 ```
 POST /api/auth/register
 Content-Type: application/json
@@ -56,6 +57,7 @@ Response: { token, user }
 ```
 
 ### Login
+
 ```
 POST /api/auth/login
 Content-Type: application/json
@@ -69,6 +71,7 @@ Response: { token, user }
 ```
 
 **All subsequent requests require:**
+
 ```
 Authorization: Bearer <token>
 ```
@@ -76,6 +79,7 @@ Authorization: Bearer <token>
 ## 👥 User Management
 
 ### Create User (ADMIN/SUPER_ADMIN)
+
 ```
 POST /api/users
 Authorization: Bearer <token>
@@ -90,18 +94,21 @@ Authorization: Bearer <token>
 ```
 
 ### Get All Users (ADMIN/SUPER_ADMIN)
+
 ```
 GET /api/users
 Authorization: Bearer <token>
 ```
 
 ### Get User Profile
+
 ```
 GET /api/users/profile/:userId
 Authorization: Bearer <token>
 ```
 
 ### Delete User (SUPER_ADMIN)
+
 ```
 DELETE /api/users/:userId
 Authorization: Bearer <token>
@@ -110,6 +117,7 @@ Authorization: Bearer <token>
 ## 📂 Category Management
 
 ### Create Category (ADMIN/SUPER_ADMIN)
+
 ```
 POST /api/categories
 Authorization: Bearer <token>
@@ -121,18 +129,21 @@ Authorization: Bearer <token>
 ```
 
 ### Get All Categories
+
 ```
 GET /api/categories
 Authorization: Bearer <token>
 ```
 
 ### Get Single Category
+
 ```
 GET /api/categories/:categoryId
 Authorization: Bearer <token>
 ```
 
 ### Delete Category (ADMIN/SUPER_ADMIN)
+
 ```
 DELETE /api/categories/:categoryId
 Authorization: Bearer <token>
@@ -141,6 +152,7 @@ Authorization: Bearer <token>
 ## 📄 Document Management
 
 ### Upload Document (ADMIN/SUPER_ADMIN)
+
 ```
 POST /api/documents/upload
 Authorization: Bearer <token>
@@ -154,34 +166,40 @@ Fields:
 ```
 
 **Auto-generated response:**
+
 - Document ID: PDF000001 format
 - QR Code: Automatically generated and stored
 
 ### Get All Documents
+
 ```
 GET /api/documents?search=title&categoryId=1&limit=50&offset=0
 Authorization: Bearer <token>
 ```
 
 ### Get Single Document
+
 ```
 GET /api/documents/:documentId
 Authorization: Bearer <token>
 ```
 
 ### Download Document
+
 ```
 GET /api/documents/:documentId/download
 Authorization: Bearer <token>
 ```
 
 ### Get QR Code
+
 ```
 GET /api/documents/:documentId/qr
 Authorization: Bearer <token>
 ```
 
 ### Search Documents
+
 ```
 GET /api/documents/search?query=text&type=all
 Authorization: Bearer <token>
@@ -190,6 +208,7 @@ type: 'all' | 'title' | 'document_id'
 ```
 
 ### Delete Document (ADMIN/SUPER_ADMIN)
+
 ```
 DELETE /api/documents/:documentId
 Authorization: Bearer <token>
@@ -198,6 +217,7 @@ Authorization: Bearer <token>
 ## 📊 Dashboard
 
 ### Get Stats
+
 ```
 GET /api/dashboard/stats
 Authorization: Bearer <token>
@@ -214,12 +234,14 @@ Response: {
 ```
 
 ### Get Access Logs
+
 ```
 GET /api/dashboard/logs?limit=100&offset=0
 Authorization: Bearer <token>
 ```
 
 ### Get User Activity
+
 ```
 GET /api/dashboard/user-activity/:userId?limit=50&offset=0
 Authorization: Bearer <token>
@@ -227,15 +249,16 @@ Authorization: Bearer <token>
 
 ## 🔑 Role-Based Access Control
 
-| Role | Users | Categories | Documents | Dashboard |
-|------|-------|------------|-----------|-----------|
+| Role        | Users              | Categories    | Documents     | Dashboard   |
+| ----------- | ------------------ | ------------- | ------------- | ----------- |
 | SUPER_ADMIN | Create/View/Delete | Create/Delete | Upload/Delete | Full Access |
-| ADMIN | View/Create | Create/Delete | Upload/Delete | Full Access |
-| VIEWER | View Profile | View | View/Download | View Stats |
+| ADMIN       | View/Create        | Create/Delete | Upload/Delete | Full Access |
+| VIEWER      | View Profile       | View          | View/Download | View Stats  |
 
 ## 📋 Database Schema
 
 ### users
+
 - id (INTEGER PRIMARY KEY)
 - first_name, last_name (TEXT)
 - email (TEXT UNIQUE)
@@ -244,12 +267,14 @@ Authorization: Bearer <token>
 - created_at (TEXT)
 
 ### categories
+
 - id (INTEGER PRIMARY KEY)
 - name (TEXT UNIQUE)
 - description (TEXT)
 - created_at (TEXT)
 
 ### documents
+
 - id (INTEGER PRIMARY KEY)
 - document_id (TEXT UNIQUE) - Format: PDF000001
 - title, description (TEXT)
@@ -262,6 +287,7 @@ Authorization: Bearer <token>
 - deleted_at (TEXT)
 
 ### qr_codes
+
 - id (INTEGER PRIMARY KEY)
 - document_id (TEXT UNIQUE FK)
 - qr_code_path (TEXT)
@@ -269,6 +295,7 @@ Authorization: Bearer <token>
 - created_at (TEXT)
 
 ### access_logs
+
 - id (INTEGER PRIMARY KEY)
 - user_id, document_id (FK)
 - action (TEXT) - VIEW | DOWNLOAD | UPLOAD | DELETE
@@ -315,6 +342,7 @@ UPLOAD_DIR=./uploads                        # Upload directory
 ## ✅ Testing the API
 
 ### 1. Register & Login
+
 ```bash
 # Register
 curl -X POST http://localhost:3000/api/auth/register \
@@ -328,6 +356,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 ```
 
 ### 2. Create Category
+
 ```bash
 curl -X POST http://localhost:3000/api/categories \
   -H "Authorization: Bearer <token>" \
@@ -336,6 +365,7 @@ curl -X POST http://localhost:3000/api/categories \
 ```
 
 ### 3. Upload Document
+
 ```bash
 curl -X POST http://localhost:3000/api/documents/upload \
   -H "Authorization: Bearer <token>" \
@@ -347,6 +377,7 @@ curl -X POST http://localhost:3000/api/documents/upload \
 ## 🐛 Error Handling
 
 All endpoints return consistent error responses:
+
 ```json
 {
   "error": "Error description"
@@ -354,6 +385,7 @@ All endpoints return consistent error responses:
 ```
 
 HTTP Status Codes:
+
 - 200: OK
 - 201: Created
 - 400: Bad Request

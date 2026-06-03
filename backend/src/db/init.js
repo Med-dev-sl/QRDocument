@@ -1,15 +1,25 @@
+<<<<<<< HEAD
+import Database from "better-sqlite3";
+import path from "path";
+import { fileURLToPath } from "url";
+=======
 import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+>>>>>>> 08f42d12284a64b1b83f47d3b911ebe278aaa859
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, '..', '..', 'data.db');
+const dbPath = path.join(__dirname, "..", "..", "data.db");
 
 let db;
 
+<<<<<<< HEAD
+db.pragma("journal_mode = WAL");
+=======
 export async function getDb() {
   if (db) return db;
+>>>>>>> 08f42d12284a64b1b83f47d3b911ebe278aaa859
 
 <<<<<<< HEAD
   const SQL = await initSqlJs();
