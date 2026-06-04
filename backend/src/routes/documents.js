@@ -112,7 +112,7 @@ router.post(
           req.userId,
         );
 
-      const qrData = `${PUBLIC_URL}/api/public/documents/${documentId}/download`;
+      const qrData = `${PUBLIC_URL}/api/documents/public/${documentId}/download`;
       const qrPath = path.join(qrcodesDir, `${documentId}.png`);
       await QRCode.toFile(qrPath, qrData, { width: 300 });
 
@@ -229,7 +229,9 @@ router.get("/public/:documentId/download", async (req, res) => {
       return res.status(404).json({ error: "File not found" });
     }
 
-    res.download(document.file_path, document.file_name);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("Content-Disposition", `inline; filename="${document.file_name}"`);
+    res.sendFile(document.file_path);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

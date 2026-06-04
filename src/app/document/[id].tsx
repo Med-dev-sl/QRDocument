@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -22,6 +23,7 @@ export default function DocumentDetailScreen() {
   const [doc, setDoc] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [cached, setCached] = useState(false);
   const [error, setError] = useState({ visible: false, message: '' });
 
   useEffect(() => {
@@ -31,21 +33,53 @@ export default function DocumentDetailScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const qrUrl = `${API_URL}/api/documents/${id}/qr`;
   const downloadUrl = `${API_URL}/api/documents/${id}/download`;
+  const qrUrl = `${API_URL}/api/documents/${id}/qr`;
+  const publicUrl = `${API_URL}/api/documents/public/${id}/download`;
+  const cacheFile = new File(Paths.document, `${id}.pdf`);
+
+  useEffect(() => {
+    if (!doc || Platform.OS === 'web') return;
+    File.downloadFileAsync(downloadUrl, cacheFile, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+      idempotent: true,
+    })
+      .then(() => setCached(true))
+      .catch(() => {});
+  }, [doc]);
 
   const handleDownload = async () => {
+    if (!doc) return;
+    if (Platform.OS === 'web') {
+      try {
+        const resp = await fetch(downloadUrl, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err: any) {
+        setError({ visible: true, message: err.message });
+      }
+      return;
+    }
+
     setDownloading(true);
     try {
-      const file = await File.downloadFileAsync(downloadUrl, Paths.document, {
+      const file = await File.downloadFileAsync(downloadUrl, cacheFile, {
         headers: { Authorization: `Bearer ${getToken()}` },
         idempotent: true,
       });
+      setCached(true);
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(file.uri, { mimeType: 'application/pdf' });
       } else {
-        Alert.alert('Downloaded', `Saved to device`);
+        Alert.alert('Downloaded', 'File saved to device');
       }
     } catch (err: any) {
       setError({ visible: true, message: err.message });
@@ -57,7 +91,7 @@ export default function DocumentDetailScreen() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `View document ${doc?.documentId} - ${doc?.title}\n\nDownload: ${downloadUrl}\nScan QR: ${qrUrl}`,
+        message: `Document: ${doc?.documentId} - ${doc?.title}\n\n${publicUrl}`,
       });
     } catch {}
   };
@@ -90,6 +124,7 @@ export default function DocumentDetailScreen() {
           <Text style={styles.docId}>{doc.documentId}</Text>
           {doc.description && <Text style={styles.desc}>{doc.description}</Text>}
           <Text style={styles.meta}>{(doc.fileSize / 1024).toFixed(0)} KB · {doc.uploadedAt}</Text>
+          {cached && <Text style={styles.cachedBadge}>✓ Available offline</Text>}
         </View>
 
         <View style={styles.qrSection}>
@@ -99,14 +134,14 @@ export default function DocumentDetailScreen() {
             style={styles.qrImage}
             resizeMode="contain"
           />
-          <Text style={styles.qrHint}>Scan this QR code to view the document offline</Text>
+          <Text style={styles.qrHint}>Scan this QR code with any phone camera to view the document</Text>
         </View>
 
         <Pressable style={styles.downloadBtn} onPress={handleDownload} disabled={downloading}>
           {downloading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.downloadBtnText}>Download & Share PDF</Text>
+            <Text style={styles.downloadBtnText}>{cached ? 'Share PDF' : 'Download & Share PDF'}</Text>
           )}
         </Pressable>
 
@@ -134,6 +169,7 @@ const styles = StyleSheet.create({
   docId: { fontSize: 14, color: '#208AEF', fontWeight: '600', marginBottom: 8 },
   desc: { fontSize: 14, color: '#64748B', lineHeight: 20, marginBottom: 8 },
   meta: { fontSize: 13, color: '#94A3B8' },
+  cachedBadge: { fontSize: 12, color: '#22C55E', fontWeight: '600', marginTop: 6 },
   qrSection: {
     backgroundColor: 'white', borderRadius: 16, padding: 24, marginBottom: 20,
     alignItems: 'center',
