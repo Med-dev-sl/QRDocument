@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { apiPost, setToken, type AuthResponse } from '@/api';
+import { useResponsive } from '@/lib/responsive';
 import SuccessModal from './success-modal';
 import ErrorModal from './error-modal';
 
 export default function LoginForm() {
+  const { isSmall, padding, contentMaxWidth } = useResponsive();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,6 @@ export default function LoginForm() {
       setError({ visible: true, message: 'Please fill in all fields' });
       return;
     }
-
     setLoading(true);
     try {
       const res = await apiPost<AuthResponse>('/api/auth/login', { email, password });
@@ -44,52 +45,49 @@ export default function LoginForm() {
   return (
     <>
       <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={[styles.container, { paddingHorizontal: padding }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+        <View style={[styles.inner, { maxWidth: contentMaxWidth }]}>
+          <Text style={[styles.title, isSmall && styles.titleSmall]}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Sign in to continue</Text>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#999"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#999"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
+              value={password}
+              onChangeText={setPassword}
+            />
 
-          <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
-            )}
-          </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.button, pressed && styles.btnPressed]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Sign In</Text>}
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
-      <SuccessModal
-        visible={showSuccess}
-        firstName={userName}
-        onFinish={() => router.replace('/dashboard')}
-      />
-
-      <ErrorModal
-        visible={error.visible}
-        message={error.message}
-        onDismiss={() => setError({ visible: false, message: '' })}
-      />
+      <SuccessModal visible={showSuccess} firstName={userName} onFinish={() => router.replace('/dashboard')} />
+      <ErrorModal visible={error.visible} message={error.message} onDismiss={() => setError({ visible: false, message: '' })} />
     </>
   );
 }
@@ -99,7 +97,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    alignItems: 'center',
+    width: '100%',
+  },
+  inner: {
+    width: '100%',
     alignItems: 'center',
   },
   title: {
@@ -108,36 +110,38 @@ const styles = StyleSheet.create({
     color: '#111',
     marginBottom: 4,
   },
+  titleSmall: {
+    fontSize: 24,
+  },
   subtitle: {
     fontSize: 15,
     color: '#666',
-    marginBottom: 32,
+    marginBottom: 28,
   },
   form: {
     gap: 14,
     width: '100%',
-    maxWidth: 400,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    fontSize: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
     color: '#111',
     backgroundColor: '#f9f9f9',
+    minHeight: 48,
   },
   button: {
     backgroundColor: '#111',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
     marginTop: 8,
+    minHeight: 48,
+    justifyContent: 'center',
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  btnPressed: { opacity: 0.8 },
+  buttonText: { color: 'white', fontSize: 16, fontWeight: '600' },
 });
