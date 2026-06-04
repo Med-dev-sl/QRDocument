@@ -5,7 +5,9 @@ import path from "path";
 import QRCode from "qrcode";
 import { fileURLToPath } from "url";
 import db from "../db/init.js";
-import { requireRole, verifyToken } from "../middleware/auth.js";
+import { verifyToken } from "../middleware/auth.js";
+
+const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendDir = path.join(__dirname, "..", "..");
@@ -68,7 +70,6 @@ function generateDocumentId() {
 router.post(
   "/upload",
   verifyToken,
-  requireRole(["SUPER_ADMIN", "ADMIN"]),
   upload.single("file"),
   async (req, res) => {
     try {
@@ -118,7 +119,7 @@ router.post(
         );
 
       // Generate QR code
-      const qrData = `DOC:${documentId}`;
+      const qrData = `${PUBLIC_URL}/api/public/documents/${documentId}/download`;
       const qrPath = path.join(qrcodesDir, `${documentId}.png`);
       await QRCode.toFile(qrPath, qrData, { width: 300 });
 
@@ -217,6 +218,31 @@ router.get("/", verifyToken, (req, res) => {
   }
 });
 
+// Public download - no auth required (for QR code scanning)
+router.get("/public/:documentId/download", (req, res) => {
+  try {
+    const { documentId } = req.params;
+
+    const document = db
+      .prepare(
+        'SELECT * FROM documents WHERE document_id = ? AND status = "ACTIVE"',
+      )
+      .get(documentId);
+
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    if (!fs.existsSync(document.file_path)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    res.download(document.file_path, document.file_name);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get single document
 router.get("/:documentId", verifyToken, (req, res) => {
   try {
@@ -256,7 +282,7 @@ router.get("/:documentId", verifyToken, (req, res) => {
   }
 });
 
-// Download document
+// Download document (authenticated)
 router.get("/:documentId/download", verifyToken, (req, res) => {
   try {
     const { documentId } = req.params;
@@ -312,7 +338,6 @@ router.get("/:documentId/qr", (req, res) => {
 router.delete(
   "/:documentId",
   verifyToken,
-  requireRole(["SUPER_ADMIN", "ADMIN"]),
   (req, res) => {
     try {
       const { documentId } = req.params;

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
+import { Platform } from 'react-native';
 import { apiGet, apiUpload, getToken, type Category, type CategoriesResponse, type UploadResponse } from '@/api';
 import SuccessModal from '@/components/success-modal';
 import ErrorModal from '@/components/error-modal';
@@ -53,7 +54,11 @@ export default function UploadScreen() {
       form.append('title', title);
       if (description) form.append('description', description);
       if (selectedCategory) form.append('categoryId', String(selectedCategory));
-      form.append('file', { uri: file.uri, name: file.name, type: 'application/pdf' } as any);
+      if (Platform.OS === 'web' && (file as any).file) {
+        form.append('file', (file as any).file);
+      } else {
+        form.append('file', { uri: file.uri, name: file.name, type: 'application/pdf' } as any);
+      }
 
       await apiUpload<UploadResponse>('/api/documents/upload', form);
       setShowSuccess(true);

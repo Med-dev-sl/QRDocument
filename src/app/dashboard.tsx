@@ -100,12 +100,14 @@ export default function Dashboard() {
             </Text>
             <Text style={styles.statLabel}>Documents</Text>
           </View>
-          <View style={[styles.statCard, { backgroundColor: '#F0FDF4' }]}>
-            <Text style={[styles.statNumber, { color: '#16A34A' }]}>
-              {data?.stats.totalUsers ?? 0}
-            </Text>
-            <Text style={styles.statLabel}>Users</Text>
-          </View>
+          {profile?.role === 'SUPER_ADMIN' && (
+            <View style={[styles.statCard, { backgroundColor: '#F0FDF4' }]}>
+              <Text style={[styles.statNumber, { color: '#16A34A' }]}>
+                {data?.stats.totalUsers ?? 0}
+              </Text>
+              <Text style={styles.statLabel}>Users</Text>
+            </View>
+          )}
           <View style={[styles.statCard, { backgroundColor: '#FFF7ED' }]}>
             <Text style={[styles.statNumber, { color: '#EA580C' }]}>
               {data?.stats.totalCategories ?? 0}

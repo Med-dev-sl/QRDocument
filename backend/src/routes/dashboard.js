@@ -58,7 +58,7 @@ router.get("/stats", verifyToken, (req, res) => {
     res.json({
       stats: {
         totalDocuments,
-        totalUsers,
+        totalUsers: req.user.role === 'SUPER_ADMIN' ? totalUsers : undefined,
         totalCategories,
       },
       recentDocuments: recentDocuments.map((d) => ({

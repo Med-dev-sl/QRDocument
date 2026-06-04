@@ -115,6 +115,12 @@ export async function initDatabase() {
     );
   `);
 
+  // Migration: add role column to existing users table
+  try {
+    _db.run("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'VIEWER'");
+    _db.run("UPDATE users SET role = 'SUPER_ADMIN' WHERE id = (SELECT MIN(id) FROM users)");
+  } catch {}
+
   saveDatabase();
 }
 
