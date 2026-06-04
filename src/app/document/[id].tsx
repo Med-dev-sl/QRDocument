@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { API_URL, apiGet, getToken, type Document } from '@/api';
 import ErrorModal from '@/components/error-modal';
@@ -25,6 +24,7 @@ export default function DocumentDetailScreen() {
   const [downloading, setDownloading] = useState(false);
   const [cached, setCached] = useState(false);
   const [error, setError] = useState({ visible: false, message: '' });
+  const fileModule = useRef<any>(null);
 
   useEffect(() => {
     apiGet<Document>(`/api/documents/${id}`)
@@ -33,14 +33,19 @@ export default function DocumentDetailScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    import('expo-file-system').then(m => { fileModule.current = m; });
+  }, []);
+
   const downloadUrl = `${API_URL}/api/documents/${id}/download`;
   const qrUrl = `${API_URL}/api/documents/${id}/qr`;
   const publicUrl = `${API_URL}/api/documents/public/${id}/download`;
-  const cacheFile = new File(Paths.document, `${id}.pdf`);
 
   useEffect(() => {
-    if (!doc || Platform.OS === 'web') return;
-    File.downloadFileAsync(downloadUrl, cacheFile, {
+    if (!doc || Platform.OS === 'web' || !fileModule.current) return;
+    const { File, Paths } = fileModule.current;
+    File.downloadFileAsync(downloadUrl, new File(Paths.document, `${doc.documentId}.pdf`), {
       headers: { Authorization: `Bearer ${getToken()}` },
       idempotent: true,
     })
@@ -68,9 +73,11 @@ export default function DocumentDetailScreen() {
       return;
     }
 
+    if (!fileModule.current) return;
     setDownloading(true);
     try {
-      const file = await File.downloadFileAsync(downloadUrl, cacheFile, {
+      const { File, Paths } = fileModule.current;
+      const file = await File.downloadFileAsync(downloadUrl, new File(Paths.document, `${doc.documentId}.pdf`), {
         headers: { Authorization: `Bearer ${getToken()}` },
         idempotent: true,
       });

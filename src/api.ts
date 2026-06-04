@@ -10,8 +10,26 @@ export const API_URL = getBaseUrl();
 
 let authToken: string | null = null;
 
+function loadToken(): string | null {
+  const stored = (globalThis as any).localStorage?.getItem?.('authToken');
+  return stored || null;
+}
+
+function saveToken(token: string | null) {
+  try {
+    if (token) {
+      (globalThis as any).localStorage?.setItem?.('authToken', token);
+    } else {
+      (globalThis as any).localStorage?.removeItem?.('authToken');
+    }
+  } catch {}
+}
+
+authToken = loadToken();
+
 export function setToken(token: string | null) {
   authToken = token;
+  saveToken(token);
 }
 
 export function getToken() {
