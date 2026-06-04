@@ -18,6 +18,22 @@ app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+app.get('/', (_, res) =>
+  res.json({
+    name: 'Kyoku API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      users: '/api/users',
+      documents: '/api/documents',
+      categories: '/api/categories',
+      dashboard: '/api/dashboard',
+    },
+  }),
+);
+
 app.get('/health', (_, res) =>
   res.json({ status: 'ok', timestamp: new Date().toISOString() }),
 );
