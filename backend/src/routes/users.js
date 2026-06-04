@@ -5,6 +5,28 @@ import { requireRole, verifyToken } from "../middleware/auth.js";
 
 const router = Router();
 
+// Get current user profile
+router.get('/me', verifyToken, (req, res) => {
+  try {
+    const user = db.prepare(
+      'SELECT id, first_name, last_name, email, role, created_at FROM users WHERE id = ?',
+    ).get(req.userId);
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    res.json({
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.created_at,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Create user (SUPER_ADMIN, ADMIN only)
 router.post(
   "/",

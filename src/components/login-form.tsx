@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { apiPost, type AuthResponse } from '@/api';
+import { apiPost, setToken, type AuthResponse } from '@/api';
 import SuccessModal from './success-modal';
 import ErrorModal from './error-modal';
 
@@ -31,6 +31,7 @@ export default function LoginForm() {
     setLoading(true);
     try {
       const res = await apiPost<AuthResponse>('/api/auth/login', { email, password });
+      setToken(res.token);
       setUserName(res.user.firstName);
       setShowSuccess(true);
     } catch (err: any) {

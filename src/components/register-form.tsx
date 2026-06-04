@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { apiPost, type AuthResponse } from '@/api';
+import { apiPost, setToken, type AuthResponse } from '@/api';
 import SuccessModal from './success-modal';
 import ErrorModal from './error-modal';
 
@@ -45,6 +45,7 @@ export default function RegisterForm() {
         email,
         password,
       });
+      setToken(res.token);
       setUserName(res.user.firstName);
       setShowSuccess(true);
     } catch (err: any) {

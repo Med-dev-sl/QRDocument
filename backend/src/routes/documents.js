@@ -118,8 +118,9 @@ router.post(
         );
 
       // Generate QR code
+      const qrData = `DOC:${documentId}`;
       const qrPath = path.join(qrcodesDir, `${documentId}.png`);
-      await QRCode.toFile(qrPath, documentId, { width: 300 });
+      await QRCode.toFile(qrPath, qrData, { width: 300 });
 
       // Insert QR code record
       db.prepare(
@@ -127,7 +128,7 @@ router.post(
       INSERT INTO qr_codes (document_id, qr_code_path, qr_data)
       VALUES (?, ?, ?)
     `,
-      ).run(documentId, qrPath, documentId);
+      ).run(documentId, qrPath, qrData);
 
       // Log access
       db.prepare(
@@ -289,7 +290,7 @@ router.get("/:documentId/download", verifyToken, (req, res) => {
 });
 
 // Get QR code
-router.get("/:documentId/qr", verifyToken, (req, res) => {
+router.get("/:documentId/qr", (req, res) => {
   try {
     const { documentId } = req.params;
 
