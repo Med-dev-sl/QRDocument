@@ -5,7 +5,7 @@ import { generateToken } from '../middleware/auth.js';
 
 const router = Router();
 
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
@@ -17,16 +17,16 @@ router.post('/register', (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    const existing = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) {
       return res.status(409).json({ error: 'Email already registered' });
     }
 
-    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+    const userCount = (await db.prepare('SELECT COUNT(*)::int as count FROM users').get()).count;
     const role = userCount === 0 ? 'SUPER_ADMIN' : 'VIEWER';
 
     const hashed = bcrypt.hashSync(password, 10);
-    const result = db.prepare(
+    const result = await db.prepare(
       'INSERT INTO users (first_name, last_name, email, password, role) VALUES (?, ?, ?, ?, ?)',
     ).run(firstName, lastName, email, hashed, role);
 
@@ -42,7 +42,7 @@ router.post('/register', (req, res) => {
   }
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -50,7 +50,7 @@ router.post('/login', (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user || !bcrypt.compareSync(password, user.password)) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }

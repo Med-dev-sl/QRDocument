@@ -15,14 +15,12 @@ const uploadsDir = path.join(backendDir, "uploads");
 const pdfsDir = path.join(uploadsDir, "pdfs");
 const qrcodesDir = path.join(uploadsDir, "qrcodes");
 
-// Ensure directories exist
 [pdfsDir, qrcodesDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
-// Configure multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, pdfsDir);
@@ -49,9 +47,8 @@ const upload = multer({
 });
 const router = Router();
 
-// Generate unique document ID
-function generateDocumentId() {
-  const lastDoc = db
+async function generateDocumentId() {
+  const lastDoc = await db
     .prepare("SELECT document_id FROM documents ORDER BY id DESC LIMIT 1")
     .get();
 
@@ -66,7 +63,6 @@ function generateDocumentId() {
   return `PDF${String(nextNumber).padStart(6, "0")}`;
 }
 
-// Upload document (ADMIN and above)
 router.post(
   "/upload",
   verifyToken,
@@ -84,9 +80,8 @@ router.post(
         return res.status(400).json({ error: "Title is required" });
       }
 
-      // Validate category if provided
       if (categoryId) {
-        const category = db
+        const category = await db
           .prepare("SELECT id FROM categories WHERE id = ?")
           .get(categoryId);
         if (!category) {
@@ -95,11 +90,10 @@ router.post(
         }
       }
 
-      const documentId = generateDocumentId();
+      const documentId = await generateDocumentId();
       const fileStat = fs.statSync(req.file.path);
 
-      // Insert document
-      const result = db
+      const result = await db
         .prepare(
           `
       INSERT INTO documents 
@@ -118,26 +112,27 @@ router.post(
           req.userId,
         );
 
-      // Generate QR code
       const qrData = `${PUBLIC_URL}/api/public/documents/${documentId}/download`;
       const qrPath = path.join(qrcodesDir, `${documentId}.png`);
       await QRCode.toFile(qrPath, qrData, { width: 300 });
 
-      // Insert QR code record
-      db.prepare(
-        `
+      await db
+        .prepare(
+          `
       INSERT INTO qr_codes (document_id, qr_code_path, qr_data)
       VALUES (?, ?, ?)
     `,
-      ).run(documentId, qrPath, qrData);
+        )
+        .run(documentId, qrPath, qrData);
 
-      // Log access
-      db.prepare(
-        `
+      await db
+        .prepare(
+          `
       INSERT INTO access_logs (user_id, document_id, action, ip_address)
       VALUES (?, ?, ?, ?)
     `,
-      ).run(req.userId, documentId, "UPLOAD", req.ip);
+        )
+        .run(req.userId, documentId, "UPLOAD", req.ip);
 
       res.status(201).json({
         message: "Document uploaded successfully",
@@ -161,15 +156,14 @@ router.post(
   },
 );
 
-// Get all documents
-router.get("/", verifyToken, (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     const { search, categoryId, limit = 50, offset = 0 } = req.query;
-    let query = 'SELECT * FROM documents WHERE status = "ACTIVE"';
+    let query = "SELECT * FROM documents WHERE status = 'ACTIVE'";
     const params = [];
 
     if (search) {
-      query += " AND (title LIKE ? OR document_id LIKE ?)";
+      query += " AND (title ILIKE ? OR document_id ILIKE ?)";
       const searchTerm = `%${search}%`;
       params.push(searchTerm, searchTerm);
     }
@@ -182,22 +176,21 @@ router.get("/", verifyToken, (req, res) => {
     query += " ORDER BY uploaded_at DESC LIMIT ? OFFSET ?";
     params.push(limit, offset);
 
-    const documents = db.prepare(query).all(...params);
+    const documents = await db.prepare(query).all(...params);
 
-    const countQuery =
-      'SELECT COUNT(*) as total FROM documents WHERE status = "ACTIVE"' +
-      (search ? " AND (title LIKE ? OR document_id LIKE ?)" : "") +
-      (categoryId ? " AND category_id = ?" : "");
-
+    let countQuery =
+      "SELECT COUNT(*)::int as total FROM documents WHERE status = 'ACTIVE'";
     const countParams = [];
     if (search) {
+      countQuery += " AND (title ILIKE ? OR document_id ILIKE ?)";
       countParams.push(`%${search}%`, `%${search}%`);
     }
     if (categoryId) {
+      countQuery += " AND category_id = ?";
       countParams.push(categoryId);
     }
 
-    const { total } = db.prepare(countQuery).get(...countParams);
+    const { total } = await db.prepare(countQuery).get(...countParams);
 
     res.json({
       total,
@@ -218,14 +211,13 @@ router.get("/", verifyToken, (req, res) => {
   }
 });
 
-// Public download - no auth required (for QR code scanning)
-router.get("/public/:documentId/download", (req, res) => {
+router.get("/public/:documentId/download", async (req, res) => {
   try {
     const { documentId } = req.params;
 
-    const document = db
+    const document = await db
       .prepare(
-        'SELECT * FROM documents WHERE document_id = ? AND status = "ACTIVE"',
+        "SELECT * FROM documents WHERE document_id = ? AND status = 'ACTIVE'",
       )
       .get(documentId);
 
@@ -243,14 +235,13 @@ router.get("/public/:documentId/download", (req, res) => {
   }
 });
 
-// Get single document
-router.get("/:documentId", verifyToken, (req, res) => {
+router.get("/:documentId", verifyToken, async (req, res) => {
   try {
     const { documentId } = req.params;
 
-    const document = db
+    const document = await db
       .prepare(
-        'SELECT * FROM documents WHERE document_id = ? AND status = "ACTIVE"',
+        "SELECT * FROM documents WHERE document_id = ? AND status = 'ACTIVE'",
       )
       .get(documentId);
 
@@ -258,13 +249,14 @@ router.get("/:documentId", verifyToken, (req, res) => {
       return res.status(404).json({ error: "Document not found" });
     }
 
-    // Log access
-    db.prepare(
-      `
+    await db
+      .prepare(
+        `
       INSERT INTO access_logs (user_id, document_id, action, ip_address)
       VALUES (?, ?, ?, ?)
     `,
-    ).run(req.userId, documentId, "VIEW", req.ip);
+      )
+      .run(req.userId, documentId, "VIEW", req.ip);
 
     res.json({
       id: document.id,
@@ -282,14 +274,13 @@ router.get("/:documentId", verifyToken, (req, res) => {
   }
 });
 
-// Download document (authenticated)
-router.get("/:documentId/download", verifyToken, (req, res) => {
+router.get("/:documentId/download", verifyToken, async (req, res) => {
   try {
     const { documentId } = req.params;
 
-    const document = db
+    const document = await db
       .prepare(
-        'SELECT * FROM documents WHERE document_id = ? AND status = "ACTIVE"',
+        "SELECT * FROM documents WHERE document_id = ? AND status = 'ACTIVE'",
       )
       .get(documentId);
 
@@ -301,13 +292,14 @@ router.get("/:documentId/download", verifyToken, (req, res) => {
       return res.status(404).json({ error: "File not found" });
     }
 
-    // Log access
-    db.prepare(
-      `
+    await db
+      .prepare(
+        `
       INSERT INTO access_logs (user_id, document_id, action, ip_address)
       VALUES (?, ?, ?, ?)
     `,
-    ).run(req.userId, documentId, "DOWNLOAD", req.ip);
+      )
+      .run(req.userId, documentId, "DOWNLOAD", req.ip);
 
     res.download(document.file_path, document.file_name);
   } catch (error) {
@@ -315,12 +307,11 @@ router.get("/:documentId/download", verifyToken, (req, res) => {
   }
 });
 
-// Get QR code
-router.get("/:documentId/qr", (req, res) => {
+router.get("/:documentId/qr", async (req, res) => {
   try {
     const { documentId } = req.params;
 
-    const qr = db
+    const qr = await db
       .prepare("SELECT qr_code_path FROM qr_codes WHERE document_id = ?")
       .get(documentId);
 
@@ -334,17 +325,16 @@ router.get("/:documentId/qr", (req, res) => {
   }
 });
 
-// Soft delete document (ADMIN and above)
 router.delete(
   "/:documentId",
   verifyToken,
-  (req, res) => {
+  async (req, res) => {
     try {
       const { documentId } = req.params;
 
-      const document = db
+      const document = await db
         .prepare(
-          'SELECT * FROM documents WHERE document_id = ? AND status = "ACTIVE"',
+          "SELECT * FROM documents WHERE document_id = ? AND status = 'ACTIVE'",
         )
         .get(documentId);
 
@@ -352,17 +342,20 @@ router.delete(
         return res.status(404).json({ error: "Document not found" });
       }
 
-      db.prepare(
-        'UPDATE documents SET status = "DELETED", deleted_at = datetime("now") WHERE document_id = ?',
-      ).run(documentId);
+      await db
+        .prepare(
+          "UPDATE documents SET status = 'DELETED', deleted_at = NOW() WHERE document_id = ?",
+        )
+        .run(documentId);
 
-      // Log access
-      db.prepare(
-        `
+      await db
+        .prepare(
+          `
       INSERT INTO access_logs (user_id, document_id, action, ip_address)
       VALUES (?, ?, ?, ?)
     `,
-      ).run(req.userId, documentId, "DELETE", req.ip);
+        )
+        .run(req.userId, documentId, "DELETE", req.ip);
 
       res.json({ message: "Document deleted successfully" });
     } catch (error) {
@@ -371,8 +364,7 @@ router.delete(
   },
 );
 
-// Search documents
-router.get("/search", verifyToken, (req, res) => {
+router.get("/search", verifyToken, async (req, res) => {
   try {
     const { query, type = "all" } = req.query;
 
@@ -384,24 +376,25 @@ router.get("/search", verifyToken, (req, res) => {
     let results = [];
 
     if (type === "all" || type === "title") {
-      results = db
+      const titleResults = await db
         .prepare(
           `
         SELECT * FROM documents 
-        WHERE status = "ACTIVE" AND title LIKE ?
+        WHERE status = 'ACTIVE' AND title ILIKE ?
         ORDER BY uploaded_at DESC
         LIMIT 100
       `,
         )
         .all(searchTerm);
+      results = titleResults;
     }
 
     if (type === "all" || type === "document_id") {
-      const idResults = db
+      const idResults = await db
         .prepare(
           `
         SELECT * FROM documents 
-        WHERE status = "ACTIVE" AND document_id LIKE ?
+        WHERE status = 'ACTIVE' AND document_id ILIKE ?
         ORDER BY uploaded_at DESC
         LIMIT 100
       `,

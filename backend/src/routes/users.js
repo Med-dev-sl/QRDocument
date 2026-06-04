@@ -5,10 +5,9 @@ import { requireRole, verifyToken } from "../middleware/auth.js";
 
 const router = Router();
 
-// Get current user profile
-router.get('/me', verifyToken, (req, res) => {
+router.get('/me', verifyToken, async (req, res) => {
   try {
-    const user = db.prepare(
+    const user = await db.prepare(
       'SELECT id, first_name, last_name, email, role, created_at FROM users WHERE id = ?',
     ).get(req.userId);
 
@@ -27,12 +26,11 @@ router.get('/me', verifyToken, (req, res) => {
   }
 });
 
-// Create user (SUPER_ADMIN, ADMIN only)
 router.post(
   "/",
   verifyToken,
   requireRole(["SUPER_ADMIN", "ADMIN"]),
-  (req, res) => {
+  async (req, res) => {
     try {
       const { firstName, lastName, email, password, role } = req.body;
 
@@ -49,7 +47,7 @@ router.post(
       const validRoles = ["SUPER_ADMIN", "ADMIN", "VIEWER"];
       const userRole = role && validRoles.includes(role) ? role : "VIEWER";
 
-      const existing = db
+      const existing = await db
         .prepare("SELECT id FROM users WHERE email = ?")
         .get(email);
       if (existing) {
@@ -57,7 +55,7 @@ router.post(
       }
 
       const hashed = bcrypt.hashSync(password, 10);
-      const result = db
+      const result = await db
         .prepare(
           "INSERT INTO users (first_name, last_name, email, password, role) VALUES (?, ?, ?, ?, ?)",
         )
@@ -79,14 +77,13 @@ router.post(
   },
 );
 
-// Get all users (SUPER_ADMIN, ADMIN only)
 router.get(
   "/",
   verifyToken,
   requireRole(["SUPER_ADMIN", "ADMIN"]),
-  (req, res) => {
+  async (req, res) => {
     try {
-      const users = db
+      const users = await db
         .prepare(
           "SELECT id, first_name, last_name, email, role, created_at FROM users ORDER BY created_at DESC",
         )
@@ -108,8 +105,7 @@ router.get(
   },
 );
 
-// Get user profile
-router.get("/profile/:userId", verifyToken, (req, res) => {
+router.get("/profile/:userId", verifyToken, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -120,7 +116,7 @@ router.get("/profile/:userId", verifyToken, (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const user = db
+    const user = await db
       .prepare(
         "SELECT id, first_name, last_name, email, role, created_at FROM users WHERE id = ?",
       )
@@ -142,12 +138,11 @@ router.get("/profile/:userId", verifyToken, (req, res) => {
   }
 });
 
-// Delete user (SUPER_ADMIN only)
 router.delete(
   "/:userId",
   verifyToken,
   requireRole(["SUPER_ADMIN"]),
-  (req, res) => {
+  async (req, res) => {
     try {
       const { userId } = req.params;
 
@@ -157,12 +152,12 @@ router.delete(
           .json({ error: "Cannot delete your own account" });
       }
 
-      const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
+      const user = await db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+      await db.prepare("DELETE FROM users WHERE id = ?").run(userId);
 
       res.json({ message: "User deleted successfully" });
     } catch (error) {

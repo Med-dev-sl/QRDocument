@@ -7,7 +7,7 @@ export function generateToken(userId) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
 }
 
-export function verifyToken(req, res, next) {
+export async function verifyToken(req, res, next) {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'No token provided' });
@@ -18,7 +18,7 @@ export function verifyToken(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.userId = decoded.userId;
 
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+    const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }

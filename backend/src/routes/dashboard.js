@@ -4,24 +4,21 @@ import { verifyToken } from "../middleware/auth.js";
 
 const router = Router();
 
-// Get dashboard stats
-router.get("/stats", verifyToken, (req, res) => {
+router.get("/stats", verifyToken, async (req, res) => {
   try {
-    const totalDocuments = db
-      .prepare(
-        'SELECT COUNT(*) as count FROM documents WHERE status = "ACTIVE"',
-      )
-      .get().count;
+    const totalDocuments = (await db
+      .prepare('SELECT COUNT(*)::int as count FROM documents WHERE status = \'ACTIVE\'')
+      .get()).count;
 
-    const totalUsers = db
-      .prepare("SELECT COUNT(*) as count FROM users")
-      .get().count;
+    const totalUsers = (await db
+      .prepare("SELECT COUNT(*)::int as count FROM users")
+      .get()).count;
 
-    const totalCategories = db
-      .prepare("SELECT COUNT(*) as count FROM categories")
-      .get().count;
+    const totalCategories = (await db
+      .prepare("SELECT COUNT(*)::int as count FROM categories")
+      .get()).count;
 
-    const recentDocuments = db
+    const recentDocuments = await db
       .prepare(
         `
       SELECT 
@@ -32,14 +29,14 @@ router.get("/stats", verifyToken, (req, res) => {
         u.last_name
       FROM documents d
       JOIN users u ON d.uploaded_by = u.id
-      WHERE d.status = "ACTIVE"
+      WHERE d.status = 'ACTIVE'
       ORDER BY d.uploaded_at DESC
       LIMIT 10
     `,
       )
       .all();
 
-    const categoryStats = db
+    const categoryStats = await db
       .prepare(
         `
       SELECT 
@@ -47,8 +44,8 @@ router.get("/stats", verifyToken, (req, res) => {
         c.name,
         COUNT(d.id) as document_count
       FROM categories c
-      LEFT JOIN documents d ON c.id = d.category_id AND d.status = "ACTIVE"
-      GROUP BY c.id
+      LEFT JOIN documents d ON c.id = d.category_id AND d.status = 'ACTIVE'
+      GROUP BY c.id, c.name
       ORDER BY document_count DESC
       LIMIT 10
     `,
@@ -78,12 +75,11 @@ router.get("/stats", verifyToken, (req, res) => {
   }
 });
 
-// Get access logs
-router.get("/logs", verifyToken, (req, res) => {
+router.get("/logs", verifyToken, async (req, res) => {
   try {
     const { limit = 100, offset = 0 } = req.query;
 
-    const logs = db
+    const logs = await db
       .prepare(
         `
       SELECT 
@@ -102,9 +98,9 @@ router.get("/logs", verifyToken, (req, res) => {
       )
       .all(limit, offset);
 
-    const total = db
-      .prepare("SELECT COUNT(*) as count FROM access_logs")
-      .get().count;
+    const total = (await db
+      .prepare("SELECT COUNT(*)::int as count FROM access_logs")
+      .get()).count;
 
     res.json({
       total,
@@ -125,13 +121,12 @@ router.get("/logs", verifyToken, (req, res) => {
   }
 });
 
-// Get user activity
-router.get("/user-activity/:userId", verifyToken, (req, res) => {
+router.get("/user-activity/:userId", verifyToken, async (req, res) => {
   try {
     const { userId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
 
-    const activity = db
+    const activity = await db
       .prepare(
         `
       SELECT 
@@ -149,9 +144,9 @@ router.get("/user-activity/:userId", verifyToken, (req, res) => {
       )
       .all(userId, limit, offset);
 
-    const total = db
-      .prepare("SELECT COUNT(*) as count FROM access_logs WHERE user_id = ?")
-      .get(userId).count;
+    const total = (await db
+      .prepare("SELECT COUNT(*)::int as count FROM access_logs WHERE user_id = ?")
+      .get(userId)).count;
 
     res.json({
       total,

@@ -1,18 +1,4 @@
-<<<<<<< HEAD
 node_modules/
-data.db
-=======
-node_modules/
-dist/
-build/
-.DS_Store
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.env
-.env.local
-.env.*.local
 uploads/pdfs/*
 uploads/qrcodes/*
 !uploads/pdfs/.gitkeep
@@ -20,9 +6,15 @@ uploads/qrcodes/*
 data.db
 data.db-shm
 data.db-wal
+dist/
+build/
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
->>>>>>> efd0424ff5e98143bf1e1a7a85b0a2149ee961c9
