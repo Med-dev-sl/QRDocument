@@ -14,7 +14,19 @@ const PORT = process.env.PORT || 3000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 const app = express();
 
-app.use(cors({ origin: CORS_ORIGIN }));
+const allowedOrigins = CORS_ORIGIN === '*' ? '*' : CORS_ORIGIN.split(',').map(s => s.trim());
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (allowedOrigins === '*' || !origin) return cb(null, true);
+    const match = allowedOrigins.some(allowed =>
+      origin === allowed ||
+      origin === `https://${allowed}` ||
+      origin === `http://${allowed}`,
+    );
+    cb(null, match);
+  },
+}));
 app.use(express.json());
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
